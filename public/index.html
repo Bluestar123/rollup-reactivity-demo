@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../dist/vue.js"></script>
+  <!-- <script src="/node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+
+  <script>
+    const {reactivity, effect, ref, computed} = VueReactivity
+    const state = reactivity({
+      name: 'zf',
+      age: 11,
+      a: {a:1}
+    })
+    console.log(state.a)
+    effect(() => {
+      // name 和 age 都依赖于 effect
+      // 取值的时候记住  effect   更新的时候 执行 effect， 拦截get 和 set
+      app.innerHTML = state.name + '----' + state.age
+    })
+  </script>
+</body>
+</html>
