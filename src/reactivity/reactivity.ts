@@ -1,7 +1,7 @@
 import { isObject } from './../shared/index';
 import {mutableHandlers} from './baseHandlers'
 
-export function reactivity(target: object) {
+export function reactive(target: object) {
   // 将目标变成 响应式对象 proxy
   return createReactiveObject(target, mutableHandlers) // 核心操作室读取文件时做依赖收集，数据变化时重新执行 effect
 }

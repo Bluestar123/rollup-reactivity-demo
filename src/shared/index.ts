@@ -9,5 +9,7 @@ export const isArray = Array.isArray
 export const isInteger = key => parseInt(key, 10) + '' === key
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
-
+// 私有属性
 export const hasOwn = (val, key) => hasOwnProperty.call(val, key)
+
+export const hasChanged = (val, oldVal) => val !== oldVal
