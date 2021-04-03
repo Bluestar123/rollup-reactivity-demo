@@ -10,9 +10,29 @@
     <div id="app"></div>
     <script src="../dist/vue.js"></script>
     <!-- <script src="/node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+    <script>
+      // h 创建 元素的节点
+      let {createApp, reactive, h}  = Vue
+      // 组件
+      let App = {
+        setup() {
+          let state = reactive({name: 'test', age: 11})
+          setTimeout(() => {
+            state.age = 564654
+          }, 1000)
+
+          return () => { // render 返回虚拟节点
+            return h('div', {style: {color: 'red'}}, state.name + '--' + state.age)
+          }
+        }
+      }
+      // 组件是怎么渲染的，初始化流程
+      // runtime-dom 针对浏览器平台，dom操作  runtime-core 核心模块通用的，渲染
+      createApp(App).mount('#app')
+    </script>
 
     <script>
-      const { reactive, effect, ref, computed } = VueReactivity;
+      // const { reactive, effect, ref, computed } = VueReactivity;
       // const state = reactive({
       //   name: "zf",
       //   age: 11,
@@ -34,8 +54,11 @@
       //   arrState[10] = "54555";
       // }, 1000);
 
-      let a = ref(0)
-      let b = computed(()=> a.value + 100)
+      // let a = ref(0)
+      // let b = computed(()=> {
+      //   return a.value + 100
+      // })
+      // console.log(b.value)
       // effect(() => {
       //   app.innerHTML = b.value
       // })

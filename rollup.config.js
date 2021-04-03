@@ -12,7 +12,7 @@ import path from 'path'
 export default {
   input: 'src/index.ts',
   output: {
-    name: 'VueReactivity', // vue响应式模块  window.
+    name: 'Vue', // vue响应式模块  window.
     format: 'umd',
     file: path.resolve('dist/vue.js'),
     sourcemap: true

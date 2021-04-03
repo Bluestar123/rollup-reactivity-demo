@@ -4,18 +4,50 @@ Vue 3中有一个 isRef 函数，用来判断一个对象是 ref 对象而不是
 性能方面考虑，Vue 3中的 reactive 做的事情远比第二种实现 ref 的方法多，比如有各种检查。
  */
 
-import { track, trigger } from "./effect";
+// import { track, trigger } from "./effect";
 
-export function ref(raw?) {
-  const r = {
+// export function ref(raw?) {
+//   const r = {
+//     get value() {
+//       track(r, "value");
+//       return raw;
+//     },
+//     set value(newVal) {
+//       if ((raw! = newVal)) {
+//         raw = newVal;
+//         trigger(r, "set", "value");
+//       }
+//     },
+//   };
+//   return r;
+// }
+
+import { hasChanged, isObject } from "../shared/index";
+import { track, trigger } from "./effect";
+import { reactive } from "./reactivity";
+
+export function ref(value) {
+    return createRef(value)
+}
+const convert = (val) => isObject(val) ? reactive(val) : val
+class RefImpl {
+    public readonly __v_isRef = true;
+    private _value
+    constructor(private _rawValue) {
+        this._value = convert(_rawValue)
+    }
     get value() {
-      track(r, "value");
-      return raw;
-    },
+        track(this, 'value');
+        return this._value;
+    }
     set value(newVal) {
-      raw = newVal;
-      trigger(r, "set", "value");
-    },
-  };
-  return r
+        if (hasChanged(newVal, this._rawValue)) {
+            this._rawValue = newVal;
+            this._value =  convert(newVal)
+            trigger(this, 'set', 'value');
+        }
+    }
+}
+function createRef(rawValue) {
+    return new RefImpl(rawValue)
 }

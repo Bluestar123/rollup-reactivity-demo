@@ -26,7 +26,7 @@ const effectStack = [];
 
 function createReactiveEffect(fn, options) {
   // 先存起来，
-  const effect = function () {
+  const effect = function reactiveEffect() {
     // 防止死循环 递归执行
     if (!effectStack.includes(activeEffect)) {
       try {
@@ -71,7 +71,6 @@ export function track(target, key) {
     // push dep不是数组
     activeEffect.deps.push(dep); // 双向记忆结构
   }
-  console.log(targetMap, target, key)
 }
 
 // 触发更新
@@ -85,7 +84,6 @@ export function track(target, key) {
  */
 export function trigger(target, type, key, value?, oldValue?) {
   const depsMap = targetMap.get(target);
-  console.log(depsMap, target)
   if (!depsMap) {
     // 没有做依赖收集 不用更新视图
     return;
