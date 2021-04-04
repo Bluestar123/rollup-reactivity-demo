@@ -28,7 +28,7 @@ function baseCreateRenderre(options) {
     patch(null, vnode, container)
   }
 
-  const mountElement = (vnode, container) => {
+  const mountElement = (vnode, container, anchor) => {
     // n2 虚拟节点 container 容器
     let {shapeFlag, props} = vnode
     let el = vnode.el = hostCreateElement(vnode.type)
@@ -46,7 +46,7 @@ function baseCreateRenderre(options) {
       }
     }
 
-    hostInsert(el, container)
+    hostInsert(el, container, anchor)
   }
   const mountChildren = (children, el) => {
     for (let i = 0; i<children.length;i++) {
@@ -77,7 +77,7 @@ function baseCreateRenderre(options) {
   const patchKeyChildren = (c1, c2, el) => {
     // el 当前标签那个元素
     // 内部有优化策略
-    let i = 0
+    let i = 0   // 指针
     let e1 = c1.length - 1// 老儿子 children 最后一项索引
     let e2 = c2.length - 1 // 新节点 children 最后一项索引
 
@@ -96,9 +96,107 @@ function baseCreateRenderre(options) {
       i++
     }
 
-    // 反向比较
-    
+    // 反向比较 i 固定了
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[e1]
+      const n2 = c2[e2]
+      if (isSameVnodeType(n1, n2)) {
+      } else {
+        patch(n1, n2, el)
+        break
+      }
+      e1--
+      e2--
+    }
+
+    // 考虑元素新增和删除的操作
+    // abc => abcd  (i == 3 e1 = 2 e2 = 3)  abc => dabc (i=0 e1=-1 e2=0)
+    // 只要 i > e1 说明 新增属性了
+    if (i > e1) {
+      // 有新增的部分
+      if (i <= e2) {
+        // 先根据e2获取塔下一个元素，和数组长度进行比较
+        const nextPos = e2 + 1
+        // 获取参照物，往前添加还是往后添加
+        const anchor = nextPos < c2.length ? c2[nextPos].el : null // 插后面
+
+        while(i <= e2) {
+          patch(null, c2[i], el, anchor)
+          i++
+        }
+      }
+    } else if (i > e2) {
+      // 老的比 新的长 删除
+      while(i <= e1) {
+        hostRemove(c1[i].el)
+        i++
+      }
+    } else {
+      // 无规律情况
+      // ab ced fg // i=2 e1=4 e2 = 5
+      // ab edch fg
+      const s1 = i
+      const s2 = i
+      // 新的索引和 key 做成映射表 乱序的需要映射查找
+      const keyToNewIndexMap = new Map()
+      for(let i = s2;i <= e2; i++) {
+        const nextChild = c2[i]
+        keyToNewIndexMap.set(nextChild.key, i)
+      }
+      // 中间不一样的长度
+      const toBePatched = e2 - s2 + 1
+      const newIndexToOldMapIndex = new Array().fill(0)
+
+      // 遍历老的 看有没有同样的key
+      for(let i = s1; i <= e1; i++) {
+        const prevChild = c1[i]
+        // 获取新的索引, 看下新的索引中有没有老的
+        let newIndex = keyToNewIndexMap.get(prevChild.key)
+        // 老的有   新的没有
+        if(newIndex == undefined) {
+          // 直接移除
+          hostRemove(prevChild.el)
+        } else {
+          // ab [cde] fg
+          // ab [edch] fg // [5]
+          // 修改属性
+          newIndexToOldMapIndex[newIndex - s2] = i + 1
+
+          patch(prevChild, c2[newIndex], el)
+        }
+      }
+
+      // 最长递增子序列 优化算法
+      let increasingIndexSequence= getSequence(newIndexToOldMapIndex)
+      let j = increasingIndexSequence.length - 1
+
+
+      // 更改顺序   倒叙插入
+      // 找到 最后一项 [edch]
+      for(let i = toBePatched - 1; i => 0; i++) {
+        const nextIndex = s2 + i // 找到了h 索引
+        // 找到h元素
+        const nextChild = c2[nextIndex]
+        // 找到下一个元素
+        let anchor = nextIndex + 1 < c2.length ? c2[nextIndex + 1].el : null
+        if (newIndexToOldMapIndex[i] == 0) {// 新元素直接创建，插入到当前元素下一个
+          patch(null, nextChild, el, anchor)
+        } else {
+          // 根据参照物 依次将节点直接移动过去
+          // 所有节点都要移动，dom操作 没有考虑不动的情况
+          // hostInsert(nextChild.el, el, anchor)
+
+          if (j < 0 || i != increasingIndexSequence[j]) {
+            // 不动 直接复用
+            hostInsert(nextChild.el, el, anchor)
+          } else {
+            j--
+          }
+        }
+      }
+    }
   }
+  const getSequence = (map) => { return []}
 
   // 核心diff 算法
   const patchChildren = (n1, n2, el) => {
@@ -192,9 +290,9 @@ function baseCreateRenderre(options) {
 
   }
 
-  const processElement = (n1, n2, container) => {
+  const processElement = (n1, n2, container, anchor) => {
     if (n1 == null) {
-      mountElement(n2, container)
+      mountElement(n2, container, anchor)
     } else {
       // 更新元素
       patchElement(n1, n2, container)
@@ -213,7 +311,7 @@ function baseCreateRenderre(options) {
     return n1.type == n2.type && n1.key == n2.key
   }
 
-  const patch = (n1, n2, container) => {
+  const patch = (n1, n2, container, anchor = null) => {
     let {shapeFlag} = n2 // 判断元素还是组建  n2新节点
 
     // 判断标签是否一样，1. 标签名 2. key不一致两个元素
@@ -227,11 +325,11 @@ function baseCreateRenderre(options) {
     // 20 不是 元素
     if (shapeFlag & ShapeFlags.ELEMENT) {
       // 全1才1
-      processElement(n1, n2, container)
+      processElement(n1, n2, container, anchor)
     } else if(shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
       // 10100
-      // 00100
       // 00100  是组件
+      // 00100
       processComponent(n1, n2, container)
     }
   }
