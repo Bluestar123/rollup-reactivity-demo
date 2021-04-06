@@ -58,6 +58,7 @@ export function track(target, key) {
   // 谢依赖格式
   let depsMap = targetMap.get(target);
   if (!depsMap) {
+    // target 删了或者没了，对应的键值对自动清除
     targetMap.set(target, (depsMap = new Map()));
   }
   let dep = depsMap.get(key);
